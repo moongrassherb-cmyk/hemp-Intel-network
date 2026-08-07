@@ -1,0 +1,40 @@
+name: Hemp & Cannabis Intelligence Digest
+
+on:
+  schedule:
+    # Times are UTC. These correspond to roughly 7:00 AM and 4:00 PM US Eastern
+    # (adjust for your timezone / daylight saving as needed).
+    - cron: "0 11 * * *"   # ~7:00 AM ET
+    - cron: "0 20 * * *"   # ~4:00 PM ET
+  workflow_dispatch: {}     # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  build-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Run digest script
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python hemp_digest.py
+
+      - name: Commit and push digest
+        run: |
+          git config user.name "hemp-digest-bot"
+          git config user.email "actions@github.com"
+          git add digests/
+          git diff --quiet --cached || git commit -m "Add digest $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
